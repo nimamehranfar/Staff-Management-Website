@@ -1,0 +1,339 @@
+create proc proc5(@nhood nvarchar(10),@region nvarchar(10),@metro nvarchar(20))
+as
+begin
+if not exists(select *
+from dbo.adv
+where dbo.adv.neighbourhood=@nhood
+or dbo.adv.region=@region
+or dbo.adv.metro=@metro)
+begin
+print 'no property found for sale'
+end
+else
+begin
+select *
+from dbo.adv
+where (dbo.adv.neighbourhood=@nhood
+or dbo.adv.region=@region
+or dbo.adv.metro=@metro)
+and dbo.adv.advtype='sale'
+end
+end
+
+
+create proc proc6(@pcode int)
+as
+begin
+if not exists(select *
+from dbo.adv
+where dbo.adv.pcode=@pcode)
+begin
+print 'no property found'
+end
+else
+begin
+select *
+from dbo.adv
+where dbo.adv.pcode=@pcode
+end
+end
+
+
+create proc proc7(@pcode int)
+as
+begin
+if not exists(select *
+from dbo.adv
+where dbo.adv.pcode=@pcode)
+begin
+print 'no facilities found'
+end
+else
+begin
+select dbo.adv.room,dbo.adv.meter
+from dbo.adv
+where dbo.adv.pcode=@pcode
+end
+end
+
+
+
+create proc proc8(@telormail nvarchar(50))
+as
+begin
+select * INTO #temp FROM dbo.adv
+ALTER TABLE #temp DROP COLUMN aid
+select top 1 *
+from dbo.Users,#temp
+where dbo.Users.U_id=#temp.ufkey
+and dbo.Users.telormail= @telormail
+group by #temp.advdate
+end
+
+
+create proc proc9(@telormail nvarchar(50))
+as
+begin
+select avg(dbo.adv.price)
+from dbo.Users,dbo.adv
+where dbo.Users.Uid=dbo.adv.ufkey
+and dbo.Users.telormail= @telormail
+end
+
+
+create proc proc10 (@telormail nvarchar(30),@advdate date,@meter int)
+as
+begin
+if not exists (select *
+from dbo.Users,dbo.adv
+where dbo.Users.telormail= @telormail
+and dbo.Users.Uid=dbo.adv.ufkey
+and @meter>= dbo.adv.meter
+and @advdate<=dbo.adv.advdate)
+begin
+print 'not found';
+end
+else
+begin
+select *
+from dbo.Users,dbo.adv
+where dbo.Users.telormail= @telormail
+and dbo.Users.Uid=dbo.adv.ufkey
+and @meter>= dbo.adv.meter
+and @advdate<=dbo.adv.advdate
+end
+end
+
+
+create proc proc11 (@name nvarchar(10),@region nvarchar(10),@rtype nvarchar(10),@Mname nvarchar(10),@raddress nvarchar(50),@tel int)
+as
+begin
+if not exists (select *
+from dbo.rea
+where dbo.rea.name= @name
+and dbo.rea.region= @region
+and dbo.rea.rtype= @rtype
+and dbo.rea.Mname= @Mname
+and dbo.rea.raddress= @raddress
+and dbo.rea.tel= @tel)
+begin
+insert into dbo.rea values(@name,@region,@rtype,@Mname,@raddress,@tel)
+end
+else
+begin
+print 'REA already exists';
+end
+end
+
+
+create proc proc12(@region nvarchar(10))
+as
+begin
+if not exists(select *
+from dbo.rea
+where dbo.rea.region=@region)
+begin
+print 'no REA found'
+end
+else
+begin
+select *
+from dbo.rea
+where dbo.rea.region=@region
+end
+end
+
+
+create proc proc13(@region nvarchar(10))
+as
+begin
+if not exists(select *
+from dbo.rea,dbo.deal
+where dbo.rea.region=@region
+and dbo.rea.rid=dbo.deal.rfkey)
+begin
+print 'no deal found'
+end
+else
+begin
+select *
+from dbo.rea,dbo.deal
+where dbo.rea.region=@region
+and dbo.rea.rid=dbo.deal.rfkey
+end
+end
+
+
+create proc proc14(@region nvarchar(10))
+as
+begin
+select top 1 a.homeuse,advcnt
+from dbo.adv a inner join (
+select dbo.adv.homeuse, count(dbo.adv.homeuse) as advcnt
+from dbo.adv
+group by dbo.adv.homeuse) c
+on a.homeuse=c.homeuse
+where a.region=@region
+order by advcnt desc
+end
+
+
+create proc proc15(@region nvarchar(10),@dealcnt int)
+as
+begin
+select dbo.rea.name
+from dbo.rea
+where dbo.rea.region=@region
+and @dealcnt>= (select  count(*)
+from dbo.rea,dbo.deal,dbo.adv
+where dbo.deal.rfkey=dbo.rea.rid
+and dbo.deal.afkey=dbo.adv.aid
+and dbo.adv.advtype='presale')
+end
+
+
+create proc proc16(@region nvarchar(10),@dealdate date)
+as
+begin
+select avg(dbo.adv.price)
+from dbo.deal,dbo.adv
+where dbo.adv.region=@region
+and dbo.adv.aid=dbo.deal.afkey
+and dbo.deal.dealdate >= @dealdate
+end
+
+
+create proc proc17(@region nvarchar(10),@dealdatestart date,@dealdateend date)
+as
+begin
+select count(*)
+from dbo.deal,dbo.adv
+where dbo.adv.region=@region
+and dbo.adv.aid=dbo.deal.afkey
+and dbo.deal.dealdate >= @dealdatestart
+and dbo.deal.dealdate <= @dealdateend
+end
+
+
+create proc proc18(@region nvarchar(10))
+as
+begin
+select count(*)
+from dbo.rea,dbo.deal,dbo.adv
+where dbo.rea.region=@region
+and dbo.adv.region=@region
+and dbo.rea.rid=dbo.deal.rfkey
+and dbo.adv.aid=dbo.deal.afkey
+and dbo.adv.advtype='sale'
+end
+
+
+create proc proc19(@pcode int)
+as
+begin
+if not exists(select *
+from dbo.adv
+where dbo.adv.pcode=@pcode)
+begin
+print 'no adv found'
+end
+else
+begin
+select (dbo.adv.price/dbo.adv.meter)
+from dbo.adv
+where dbo.adv.pcode=@pcode
+end
+end
+
+
+create proc proc20(@region nvarchar(10),@room int)
+as
+begin
+if not exists(select *
+from dbo.adv
+where dbo.adv.region=@region
+and dbo.adv.room=@room
+and dbo.adv.old='new')
+begin
+print 'no adv found'
+end
+else
+begin
+select *
+from dbo.adv
+where dbo.adv.region=@region
+and dbo.adv.room=@room
+and dbo.adv.old='new'
+end
+end
+
+
+create proc proc21(@meter int)
+as
+begin
+select (max(dbo.adv.price)-min(dbo.adv.price))
+from dbo.adv
+where dbo.adv.meter=@meter
+end
+
+
+create proc proc22(@region nvarchar(10),@meter int, @price int)
+as
+begin
+if @price> (select (avg(dbo.adv.price)*3/2) 
+from dbo.adv
+where @meter=dbo.adv.meter)
+begin
+print 'You can not submit this adv'
+end
+else
+begin
+print 'you can submit this adv'
+end
+end
+
+
+
+create view view1 as
+select top 1 a.region
+from dbo.adv a inner join (
+select dbo.adv.region, count(dbo.adv.region) as advcnt
+from dbo.adv
+group by dbo.adv.region) c
+on a.region=c.region
+order by advcnt
+
+
+
+
+create view view2 as
+select *
+from dbo.adv a
+where a.elev='no'
+and a.homeuse='residental'
+and a.hometype='apartment'
+
+
+create view view3 as
+select top 1 u.firstName
+from dbo.Users u inner join (
+select dbo.adv.ufkey, count(dbo.adv.ufkey) as advcnt
+from dbo.adv
+group by dbo.adv.ufkey) c
+on u.u_id=c.ufkey
+order by advcnt desc
+
+
+
+create view view4 as
+select dbo.rea.name
+from dbo.rea
+where dbo.rea.rid not in (select dbo.adv.rfkey
+from dbo.adv)
+
+
+create view view5 as
+select *
+from dbo.adv
+where dbo.adv.price='0'
+and dbo.adv.homeuse='residental'
